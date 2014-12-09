@@ -1,8 +1,8 @@
-name_of_script = "NOTE - Client Contact"
+name_of_script = file_name
 start_timer = timer
 
 Set req = CreateObject("Msxml2.XMLHttp.6.0")
-req.open "GET", "https://raw.githubusercontent.com/RobertFewins-Kalb/GitSome-at-Home/master/NOTE%20-%20Client%20Contact.vbs", False
+req.open "GET", raw_git_url, False
 req.send
 If req.Status = 200 Then
 	Set fso = CreateObject("Scripting.FileSystemObject")
