@@ -39,7 +39,7 @@ Erase dlg_para
 		c = "Docs Received"
 	END IF
 
-BeginDialog global_dialog, 0, 0, a, b, c
+BeginDialog global_dialog, 0, 0, a, b, (chr(34) & c & chr(34))
     IF dialog_name = "approved" THEN
         CheckBox 15, 25, 35, 10, "SNAP", dlg_para(1)
         CheckBox 75, 25, 55, 10, "Health Care", dlg_para(2)
