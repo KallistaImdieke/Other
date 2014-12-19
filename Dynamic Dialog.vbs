@@ -32,12 +32,14 @@ Erase dlg_para
 	IF dialog_name = "approved" THEN
 		a = 271
 		b = 285
+		c = "Approved Programs"
 	ELSEIF dialog_name = "docs" THEN
 		a = 466
 		b = 140
+		c = "Docs Received"
 	END IF
 
-BeginDialog global_dialog, 0, 0, a, b, "HI!"
+BeginDialog global_dialog, 0, 0, a, b, c
     IF dialog_name = "approved" THEN
         CheckBox 15, 25, 35, 10, "SNAP", dlg_para(1)
         CheckBox 75, 25, 55, 10, "Health Care", dlg_para(2)
@@ -46,16 +48,16 @@ BeginDialog global_dialog, 0, 0, a, b, "HI!"
         ComboBox 70, 40, 85, 15, ""+chr(9)+"Initial"+chr(9)+"Renewal"+chr(9)+"Recertification"+chr(9)+"Change"+chr(9)+"Reinstate", dlg_para(5)
         EditBox 65, 60, 70, 15, dlg_para(0)
         EditBox 120, 85, 145, 15, dlg_para(6)
-        CheckBox 5, 105, 255, 10, "Check here to have the script autofill the SNAP approval.", dlg_para(7)
-        EditBox 155, 120, 15, 15, dlg_para(8)
-        EditBox 170, 120, 15, 15, dlg_para(9)
-        EditBox 230, 120, 15, 15, dlg_para(10)
-        EditBox 245, 120, 15, 15, dlg_para(11)
-        CheckBox 5, 145, 255, 10, "Check here to have the script autofill the CASH approval.", dlg_para(12)
-        EditBox 155, 160, 15, 15, dlg_para(13)
-        EditBox 170, 160, 15, 15, dlg_para(14)
-        EditBox 230, 160, 15, 15, dlg_para(15)
-        EditBox 245, 160, 15, 15, dlg_para(16)
+'        CheckBox 5, 105, 255, 10, "Check here to have the script autofill the SNAP approval.", dlg_para(7)
+'        EditBox 155, 120, 15, 15, dlg_para(8)
+'        EditBox 170, 120, 15, 15, dlg_para(9)
+'        EditBox 230, 120, 15, 15, dlg_para(10)
+'        EditBox 245, 120, 15, 15, dlg_para(11)
+'        CheckBox 5, 145, 255, 10, "Check here to have the script autofill the CASH approval.", dlg_para(12)
+'        EditBox 155, 160, 15, 15, dlg_para(13)
+'        EditBox 170, 160, 15, 15, dlg_para(14)
+'        EditBox 230, 160, 15, 15, dlg_para(15)
+'        EditBox 245, 160, 15, 15, dlg_para(16)
         EditBox 55, 185, 210, 15, dlg_para(17)
         EditBox 85, 205, 180, 15, dlg_para(18)
         EditBox 65, 225, 200, 15, dlg_para(19)
@@ -104,10 +106,15 @@ DIM dlg_para(1000)
 
 '----------THE SCRIPT----------
 
-DO
-	dialog_name = InputBox("Enter a dialog name (approved, closed, docs)...")
-	call global_dialog(dialog_name, dlg_para, worker_signature)
-LOOP UNTIL dialog_name = "docs"
+call global_dialog("docs", dlg_para, worker_signature)
+		docs_datestamp = dlg_para(20)
+		docs_received = dlg_para(21)
+		verif_notes = dlg_para(22)
+		actions_taken = dlg_para(23)
+		docs_needed = dlg_para(24) 
+
+
+call global_dialog("approved", dlg_para, worker_signature)
 
 '		VARIABLES KEY
 		case_number = dlg_para(0)
@@ -117,25 +124,33 @@ LOOP UNTIL dialog_name = "docs"
 		emer_approved_check = dlg_para(4) 
 		type_of_approval = dlg_para(5)
 		benefit_breakdown = dlg_para(6)
-		autofill_snap_check = dlg_para(7)
-		snap_start_mo = dlg_para(8)
-		snap_start_yr = dlg_para(9) 
-		snap_end_mo = dlg_para(10)
-		snap_end_yr = dlg_para(11)
-		autofill_cash_check = dlg_para(12)
-		cash_start_mo = dlg_para(13)
-		cash_start_yr = dlg_para(14)
-		cash_end_mo = dlg_para(15)
-		cash_end_yr = dlg_para(16)
+'		autofill_snap_check = dlg_para(7)
+'		snap_start_mo = dlg_para(8)
+'		snap_start_yr = dlg_para(9) 
+'		snap_end_mo = dlg_para(10)
+'		snap_end_yr = dlg_para(11)
+'		autofill_cash_check = dlg_para(12)
+'		cash_start_mo = dlg_para(13)
+'		cash_start_yr = dlg_para(14)
+'		cash_end_mo = dlg_para(15)
+'		cash_end_yr = dlg_para(16)
 		other_notes = dlg_para(17)
 		programs_pending = dlg_para(18)
 		docs_needed = dlg_para(19)
-		docs_datestamp = dlg_para(20)
-		docs_received = dlg_para(21)
-		verif_notes = dlg_para(22)
-		actions_taken = dlg_para(23)
-		docs_needed = dlg_para(24) 
 
+IF snap_approved_check = 1 THEN approved_progs = approved_progs & "SNAP/"
+IF hc_approved_check = 1 THEN approved_progs = approved_progs & "HC/"
+IF cash_approved_check = 1 THEN approved_progs = approved_progs & "CASH/"
+IF emer_approved_check = 1 THEN approved_progs = approved_progs & "EMER/"
+IF len(approved_progs) > 0 THEN approved_progs = left(approved_progs, (len(approved_progs) - 1))
+
+msgbox ("***PROGRAMS APPROVED: " & approved_progs & "***" & chr(13) & _
+		"* Benefit Breakdown: " & benefit_breakdown & chr(13) & _
+		"* Approval Notes: " & other_notes & chr(13) & _
+		"* Programs Pending: " & programs_pending & chr(13) & _
+		"* Docs Needed: " & docs_needed & chr(13) & _
+		"---" & chr(13) & _
+		worker_signature)
 
 msgbox ("***DOCS RECEIVED: " & docs_received & "***" & chr(13) & _
 		"* Datestamp: " & docs_datestamp & chr(13) & _
@@ -144,3 +159,4 @@ msgbox ("***DOCS RECEIVED: " & docs_received & "***" & chr(13) & _
 		"* Verifs Needed: " & verifs_needed & chr(13) & _
 		"---" & chr(13) & _
 		worker_signature)
+
