@@ -87,6 +87,64 @@ case_array = split(case_array)
 
 'navigates to ELIG to determine if RCA or GA has been correctly fiated into SNAP budget.
 FOR EACH case_number IN case_array
+	CALL navigate_to_screen("ELIG", "FS")
+	EMReadScreen approved, 8, 3, 3
+	EMReadScreen version, 2, 2, 12
+	version = trim(version)
+	version = version - 1
+	IF len(version) <> 2 THEN version = "0" & version
+	IF approved <> "APPROVED" THEN 
+		EMWriteScreen version, 19, 78
+		transmit
+	END IF
+
+	EMWriteScreen "FSB1", 19, 70
+	transmit
+
+	CALL find_variable("PA Grants..............$", pa_amount, 10)
+	pa_amount = replace(pa_amount, "_", "")
+	pa_amount = trim(pa_amount)
+
+	IF pa_amount = "" THEN 
+		error_array = error_array & case_number & " "
+	ELSE
+		CALL navigate_to_screen("CASE", "CURR")
+		EMReadScreen cash_prog, 4, 10, 3
+		cash_prog = trim(cash_prog)
+		IF cash_prog = "GA" THEN
+			CALL navigate_to_screen("ELIG", "GA")
+			EMReadScreen approved, 8, 3, 3
+			EMReadScreen version, 2, 2, 12
+			version = trim(version)
+			version = version - 1
+			IF len(version) <> 2 THEN version = "0" & version
+			IF approved <> "APPROVED" THEN 
+				EMWriteScreen version, 20, 78
+				transmit
+			END IF
+			EMWriteScreen "GASM", 20, 70
+			transmit
+
+			CALL find_variable("Amount To Be Paid........$", ga_amount, 9)
+			ga_amount = trim(ga_amount)
+			IF pa_amount <> ga_amount THEN error_array = error_array & case_number & " "
+		ELSEIF cash_prog = "RCA" THEN
+			CALL navigate_to_screen("ELIG", "RCA")
+			EMReadScreen approved, 8, 3, 3
+			EMReadScreen version, 2, 2, 12
+			version = trim(version)
+			version = version - 1
+			IF len(version) <> 2 THEN version = "0" & version
+			IF approved <> "APPROVED" THEN 
+				EMWriteScreen version, 20, 78
+				transmit
+			END IF
+	END IF
+NEXT
+
+error_array = trim(error_array)
+error_array = split(error_array)
+
 
 		
 
