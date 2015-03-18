@@ -1,0 +1,159 @@
+Option Explicit
+DIM name_of_script, start_time, worker_signature
+DIM beta_agency, url, req, fso
+DIM Auto_Approved_COLA_DAIL_Message_Dialog, SNAP_COLA_Message_Checkbox, GRH_COLA_Message_Checkbox, MSA_COLA_Message_Checkbox
+DIM on_dail, read_col, read_row, is_right_line, SNAP_COLA_Check, COLA_auto_approved_first_line, cola_message
+DIM ButtonPressed
+DIM delete_confirm, dail_row, original_message
+
+'STATS GATHERING----------------------------------------------------------------------------------------------------
+name_of_script = "DAIL - AUTO APPROVED COLA"
+start_time = timer
+
+'LOADING ROUTINE FUNCTIONS FROM GITHUB REPOSITORY---------------------------------------------------------------------------
+If beta_agency = "" or beta_agency = True then
+	url = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/BETA/MASTER%20FUNCTIONS%20LIBRARY.vbs"
+Else
+	url = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/master/MASTER%20FUNCTIONS%20LIBRARY.vbs"
+End if
+SET req = CreateObject("Msxml2.XMLHttp.6.0")				'Creates an object to get a URL
+req.open "GET", url, FALSE									'Attempts to open the URL
+req.send													'Sends request
+IF req.Status = 200 THEN									'200 means great success
+	Set fso = CreateObject("Scripting.FileSystemObject")	'Creates an FSO
+	Execute req.responseText								'Executes the script code
+ELSE														'Error message, tells user to try to reach github.com, otherwise instructs to contact Veronica with details (and stops script).
+	MsgBox 	"Something has gone wrong. The code stored on GitHub was not able to be reached." & vbCr &_ 
+			vbCr & _
+			"Before contacting Veronica Cary, please check to make sure you can load the main page at www.GitHub.com." & vbCr &_
+			vbCr & _
+			"If you can reach GitHub.com, but this script still does not work, ask an alpha user to contact Veronica Cary and provide the following information:" & vbCr &_
+			vbTab & "- The name of the script you are running." & vbCr &_
+			vbTab & "- Whether or not the script is ""erroring out"" for any other users." & vbCr &_
+			vbTab & "- The name and email for an employee from your IT department," & vbCr & _
+			vbTab & vbTab & "responsible for network issues." & vbCr &_
+			vbTab & "- The URL indicated below (a screenshot should suffice)." & vbCr &_
+			vbCr & _
+			"Veronica will work with your IT department to try and solve this issue, if needed." & vbCr &_ 
+			vbCr &_
+			"URL: " & url
+			script_end_procedure("Script ended due to error connecting to GitHub.")
+END IF
+
+'DIALOGS----------------------------------------------------------------------------------------------
+BeginDialog Auto_Approved_COLA_DAIL_Message_Dialog, 0, 0, 251, 185, "Auto Approved COLA DAIL Message"
+  Text 5, 15, 240, 20, "Which of the following AUTO APPROVED COLA DAIL messages do you want to delete and case note?"
+  CheckBox 35, 45, 35, 15, "SNAP", SNAP_COLA_Message_Checkbox
+  CheckBox 35, 60, 35, 15, "GRH", GRH_COLA_Message_Checkbox
+  CheckBox 35, 75, 35, 15, "MSA", MSA_COLA_Message_Checkbox
+  Text 5, 115, 70, 10, "Sign your case note"
+  EditBox 90, 115, 65, 15, Worker_Signature
+  ButtonGroup ButtonPressed
+    OkButton 135, 150, 50, 15
+    CancelButton 190, 150, 50, 15
+EndDialog
+
+
+'THE SCRIPT----------------------------------------------------------------------------------------------------------
+
+'Connecting to BlueZone
+EMConnect ""
+
+
+'The code below is a safeguard to make sure the worker is on DAIL and the cursor is set to a COLA DAIL.
+EMReadScreen on_dail, 4, 2, 48
+IF on_dail <> "DAIL" THEN script_end_procedure("You are not in DAIL. Please navigate to DAIL and run the script again.")
+
+EMGetCursor read_row, read_col
+
+EMReadScreen is_right_line, 4, read_row, 6
+IF is_right_line <> "COLA" THEN script_end_procedure("You are not on the correct line. Please select a COLA message on your DAIL.")
+
+'Now the script needs to read the specific COLA message to determine what action to take next.
+EMReadScreen cola_message, 61, read_row, 20
+
+IF left(cola_message, 31) = "SNAP: NEW VERSION AUTO-APPROVED" THEN
+	'IF the COLA message is for an auto-approved SNAP case, the script will case note that the SNAP was auto-approved and give the worker the option to delete the DAIL.
+	EMWriteScreen "N", read_row, 3
+	transmit
+
+	PF9
+	case_note_auto_approval = left(cola_message, 31)
+	CALL write_variable_in_case_note(case_note_auto_approval)
+	CALL write_variable_in_case_note("---")
+	CALL write_variable_in_case_note(worker_signature)
+	
+	'Navigating back to DAIL/DAIL
+	PF3
+	PF3
+	
+	'The case number is now at the top of the DAIL
+	'The script needs to find the message and give the worker the option to delete.
+	delete_confirm = MsgBox("Action done. Do you want to delete this DAIL?", vbYesNo)
+	IF delete_confirm = vbYes THEN
+		dail_row = 6
+		DO
+			EMReadScreen original_message, 31, dail_row, 20
+			IF original_message = case_note_auto_approval THEN
+				EMWriteScreen "D", dail_row, 3
+				transmit
+			ELSEIF original_message = "-------------------------------" THEN
+				script_end_procedure("The original DAIL could not be found.")
+			ELSE
+				dail_row = dail_row + 1
+			END IF
+		LOOP UNTIL original_message = case_note_auto_approval
+	ELSEIF delete_confirm = vbNo THEN
+		script_end_procedure "Done!"
+	END IF
+
+	
+END IF
+	
+
+
+'Show dialog
+	DO
+		Dialog Auto_Approved_COLA_DAIL_Message_Dialog
+		IF ButtonPressed = cancel then stopscript
+		IF Worker_Signature = "" THEN MsgBox "You must sign your case note!"
+	LOOP UNTIL Worker_Signature <> ""
+		
+
+
+'SELECTS THE DAIL MESSAGE AND READS THE RESPONSE  ....... Need to look at this again..If then stmt???.................................
+EMReadScreen SNAP_COLA_Check, 30, 6, 20
+IF SNAP_COLA_Check = "SNAP: NEW VERSION AUTO-APPROVED" THEN script_end_procedure("")
+
+'READ DAIL MESSAGE TO COPY TO CASE NOTE
+EMReadScreen COLA_auto_approved_first_line, 61, row, col 'Reads each line for the case note.
+
+'Navigates to case note
+EMSendKey "n"
+transmit
+
+'Creates blank case note
+PF9
+
+'Writes COLA auto-approved DAIL message 
+
+'Writes that the message
+call write_variable_in_case_note("* COLA auto approved by DHS info from DAIL.")
+call write_variable_in_case_note_in_case_note("---")
+call write_variable_in_case_note(worker_signature & ", using automated script.")
+PF3
+PF3
+
+'Deletes DAIL COLA auto-approved message  ..............???????????????????????Currently X instead of D Still case notes even if not right dail message. Look at EMsearch vs read
+EMSearch "SNAP: NEW VERSION AUTO-APPROVED", row, col 	'Has to search, because every once in a while the rows and columns can slide one or two positions.
+If row = 0 then script_end_procedure("MAXIS may be busy: the script appears to have errored out. This should be temporary.")
+EMSendKey "x"
+transmit
+transmit
+
+
+'Success message
+MsgBox "Success! MAXIS DAIL message for auto-approved COLA has been deleted and a case note made"
+
+'Exits script and logs stats if appropriate
+script_end_procedure("")
