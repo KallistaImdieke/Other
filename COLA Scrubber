@@ -3,7 +3,7 @@ DIM name_of_script, start_time, worker_signature
 DIM beta_agency, url, req, fso
 DIM Auto_Approved_COLA_DAIL_Message_Dialog, SNAP_COLA_Message_Checkbox, GRH_COLA_Message_Checkbox, MSA_COLA_Message_Checkbox
 DIM on_dail, read_col, read_row, is_right_line, SNAP_COLA_Check, COLA_auto_approved_first_line, cola_message
-DIM ButtonPressed
+DIM ButtonPressed, worker_sig_dlg
 DIM delete_confirm, dail_row, original_message
 
 'STATS GATHERING----------------------------------------------------------------------------------------------------
@@ -53,12 +53,19 @@ BeginDialog Auto_Approved_COLA_DAIL_Message_Dialog, 0, 0, 251, 185, "Auto Approv
     CancelButton 190, 150, 50, 15
 EndDialog
 
+BeginDialog worker_sig_dlg, 0, 0, 181, 60, "Worker Signature"
+  EditBox 110, 10, 65, 15, worker_signature
+  ButtonGroup ButtonPressed
+    OkButton 75, 40, 50, 15
+    CancelButton 125, 40, 50, 15
+  Text 10, 15, 95, 10, "Please sign your case note..."
+EndDialog
+
 
 'THE SCRIPT----------------------------------------------------------------------------------------------------------
 
 'Connecting to BlueZone
 EMConnect ""
-
 
 'The code below is a safeguard to make sure the worker is on DAIL and the cursor is set to a COLA DAIL.
 EMReadScreen on_dail, 4, 2, 48
@@ -72,12 +79,19 @@ IF is_right_line <> "COLA" THEN script_end_procedure("You are not on the correct
 'Now the script needs to read the specific COLA message to determine what action to take next.
 EMReadScreen cola_message, 61, read_row, 20
 
+'Grabbing worker signature
+DO
+	DIALOG worker_sig_dlg
+		IF ButtonPressed = cancel THEN stopscript
+		IF worker_signature = "" THEN MsgBox "Sign your case note."
+LOOP UNTIL worker_signature <> ""
+
 IF left(cola_message, 31) = "SNAP: NEW VERSION AUTO-APPROVED" THEN
 	'IF the COLA message is for an auto-approved SNAP case, the script will case note that the SNAP was auto-approved and give the worker the option to delete the DAIL.
 	EMWriteScreen "N", read_row, 3
 	'replacing TRANSMIT with CALL check_for_MAXIS(True) because there is already a TRANSMIT at the start of that function
 	CALL check_for_MAXIS(True)
-
+	
 	PF9
 	case_note_auto_approval = left(cola_message, 31)
 	CALL write_variable_in_case_note(case_note_auto_approval)
