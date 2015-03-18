@@ -75,7 +75,8 @@ EMReadScreen cola_message, 61, read_row, 20
 IF left(cola_message, 31) = "SNAP: NEW VERSION AUTO-APPROVED" THEN
 	'IF the COLA message is for an auto-approved SNAP case, the script will case note that the SNAP was auto-approved and give the worker the option to delete the DAIL.
 	EMWriteScreen "N", read_row, 3
-	transmit
+	'replacing TRANSMIT with CALL check_for_MAXIS(True) because there is already a TRANSMIT at the start of that function
+	CALL check_for_MAXIS(True)
 
 	PF9
 	case_note_auto_approval = left(cola_message, 31)
@@ -110,7 +111,7 @@ IF left(cola_message, 31) = "SNAP: NEW VERSION AUTO-APPROVED" THEN
 	
 END IF
 	
-
+stopscript
 
 'Show dialog
 	DO
